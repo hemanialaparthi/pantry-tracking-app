@@ -4,16 +4,19 @@ import { firestore } from "@/firebase";
 import { Box, Button, Modal, Stack, TextField, Typography } from "@mui/material";
 import { collection, getDocs, query, setDoc, getDoc, deleteDoc, doc } from "firebase/firestore";
 import WelcomePage from "./WelcomePage";
-import { doSignOut } from "../auth"
+import { doSignOut, getCurrentUser } from "../auth";
 
 export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'inventory'));
+    if (!userId) return;
+
+    const snapshot = query(collection(firestore, `users/${userId}/inventory`));
     const docs = await getDocs(snapshot);
     const inventoryList = [];
     docs.forEach((doc) => {
@@ -26,7 +29,9 @@ export default function Home() {
   };
 
   const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item);
+    if (!userId) return;
+
+    const docRef = doc(collection(firestore, `users/${userId}/inventory`), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -39,7 +44,9 @@ export default function Home() {
   };
 
   const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item);
+    if (!userId) return;
+
+    const docRef = doc(collection(firestore, `users/${userId}/inventory`), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -55,7 +62,15 @@ export default function Home() {
   };
 
   useEffect(() => {
-    updateInventory();
+    getCurrentUser().then(user => {
+      if (user) {
+        setUserId(user.uid);
+        setIsAuthenticated(true);
+        updateInventory(user.uid);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
   }, []);
 
   const handleOpen = () => setOpen(true);
@@ -68,6 +83,7 @@ export default function Home() {
   const handleLogout = async () => {
     await doSignOut();
     setIsAuthenticated(false);
+    setUserId(null);
   };
 
   if (!isAuthenticated) {
@@ -89,10 +105,8 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
-      <Stack direction={"row"} spacing={10}>
       <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
       <Button variant="contained" onClick={handleLogout}>Logout</Button>
-      </Stack>
       <Box border="1px solid #333">
         <Box width="700px" height="100px" bgcolor="#FFADAD" display="flex" alignItems="center" justifyContent="center">
           <Typography variant="h2" color="#333">Inventory Management</Typography>
@@ -116,4 +130,4 @@ export default function Home() {
       </Box>
     </Box>
   );
-};
+}

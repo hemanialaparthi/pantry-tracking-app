@@ -1,18 +1,36 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
-import { doSignInWithEmailAndPassword } from '../auth';
+import { doSignInWithEmailAndPassword, doCreateUserwithEmailandPassword } from '../auth';
 
 export default function WelcomePage({ onContinue }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true); // Toggle between login and signup
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const handleLogin = async () => {
+  const handleSignIn = async () => {
     try {
       await doSignInWithEmailAndPassword(email, password);
       onContinue();
+      setError(null);
+      setSuccess(null);
     } catch (error) {
       setError(error.message);
+    }
+  };
+
+  const handleSignUp = async () => {
+    try {
+      await doCreateUserwithEmailandPassword(email, password);
+      setSuccess("Account created successfully! Please log in.");
+      setError(null);
+      setEmail('');
+      setPassword('');
+      setIsLogin(true); // Switch to login after successful sign-up
+    } catch (error) {
+      setError(error.message);
+      setSuccess(null);
     }
   };
 
@@ -28,7 +46,7 @@ export default function WelcomePage({ onContinue }) {
       gap={2}
     >
       <Typography variant="h4" color="#000000">
-        Welcome to your personal online pantry!
+        {isLogin ? 'Log In' : 'Sign Up'}
       </Typography>
       <TextField
         label="Email"
@@ -50,12 +68,24 @@ export default function WelcomePage({ onContinue }) {
           {error}
         </Typography>
       )}
+      {success && (
+        <Typography color="primary" variant="body2">
+          {success}
+        </Typography>
+      )}
       <Button 
         variant="contained" 
-        onClick={handleLogin}
+        onClick={isLogin ? handleSignIn : handleSignUp}
         sx={{ backgroundColor: '#000000', color: '#ffffff' }}
       >
-        Login
+        {isLogin ? 'Log In' : 'Sign Up'}
+      </Button>
+      <Button 
+        variant="outlined" 
+        onClick={() => setIsLogin(!isLogin)}
+        sx={{ color: '#000000' }}
+      >
+        {isLogin ? 'Create an Account' : 'Already have an Account? Log In'}
       </Button>
     </Box>
   );

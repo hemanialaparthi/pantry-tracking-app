@@ -1,22 +1,20 @@
-'use client';
+'use client'
 import { useState, useEffect } from "react";
 import { firestore } from "@/firebase";
 import { Box, Button, Modal, Stack, TextField, Typography } from "@mui/material";
-import { collection, getDocs, query, setDoc, getDoc, deleteDoc, doc } from "firebase/firestore";
-import WelcomePage from "./WelcomePage";
-import { doSignOut, getCurrentUser } from "../auth";
+import { collection, getDocs, query, setDoc, getDoc, doc, deleteDoc } from "firebase/firestore";
+import WelcomePage from "./welcomePage";
 
 export default function Home() {
+
+  const [showWelcome, setShowWelcome] = useState(true);
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const updateInventory = async () => {
-    if (!userId) return;
-
-    const snapshot = query(collection(firestore, `users/${userId}/inventory`));
+    const snapshot = query(collection(firestore, 'inventory'));
     const docs = await getDocs(snapshot);
     const inventoryList = [];
     docs.forEach((doc) => {
@@ -29,9 +27,7 @@ export default function Home() {
   };
 
   const addItem = async (item) => {
-    if (!userId) return;
-
-    const docRef = doc(collection(firestore, `users/${userId}/inventory`), item);
+    const docRef = doc(collection(firestore, 'inventory'), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -44,9 +40,7 @@ export default function Home() {
   };
 
   const removeItem = async (item) => {
-    if (!userId) return;
-
-    const docRef = doc(collection(firestore, `users/${userId}/inventory`), item);
+    const docRef = doc(collection(firestore, 'inventory'), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -61,34 +55,16 @@ export default function Home() {
     await updateInventory();
   };
 
+  const filteredInventory = inventory
+    .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+
   useEffect(() => {
-    getCurrentUser().then(user => {
-      if (user) {
-        setUserId(user.uid);
-        setIsAuthenticated(true);
-        updateInventory(user.uid);
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
+    updateInventory();
   }, []);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-
-  const handleContinue = () => {
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = async () => {
-    await doSignOut();
-    setIsAuthenticated(false);
-    setUserId(null);
-  };
-
-  if (!isAuthenticated) {
-    return <WelcomePage onContinue={handleContinue} />;
-  }
 
   return (
     <Box width="100vw" height="100vh" display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2}>
@@ -105,14 +81,23 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+      <Stack direction={"flex"} justifyContent={"center"} textAlign={"center"} spacing={10}>
       <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
-      <Button variant="contained" onClick={handleLogout}>Logout</Button>
-      <Box border="1px solid #333">
+      <Box width="700px" mt={2}>
+        <TextField
+          variant="outlined"
+          placeholder="Search items"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </Box>
+      </Stack>
+      <Box border="1px solid #333" mt={2}>
         <Box width="700px" height="100px" bgcolor="#FFADAD" display="flex" alignItems="center" justifyContent="center">
           <Typography variant="h2" color="#333">Inventory Management</Typography>
         </Box>
         <Stack width="700px" height="300px" spacing={3} sx={{ overflow: 'auto' }}>
-          {inventory.map(({ name, quantity }) => (
+          {filteredInventory.map(({ name, quantity }) => (
             <Box key={name} width="100%" minHeight="150px" display="flex" alignItems="center" justifyContent="space-between" bgcolor="#f0f0f0" p={5}>
               <Typography variant="h4" color="#333" textAlign="center">
                 {name.charAt(0).toUpperCase() + name.slice(1)}
@@ -120,9 +105,9 @@ export default function Home() {
               <Typography variant="h4" color="#333" textAlign="center">
                 {quantity}
               </Typography>
-              <Stack direction="row" spacing={2}>
-                <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
-                <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
+              <Stack direction={"row"} spacing={2}>
+              <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
+              <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
               </Stack>
             </Box>
           ))}

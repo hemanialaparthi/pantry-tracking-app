@@ -1,14 +1,16 @@
-'use client'
-import { useState, useEffect } from "react"
-import { firestore } from "@/firebase"
-import { Box, Button, Modal, Stack, TextField, Typography } from "@mui/material"
-import { collection, getDocs, query, setDoc, getDoc, deleteDoc, doc } from "firebase/firestore"
+'use client';
+import { useState, useEffect } from "react";
+import { firestore } from "@/firebase";
+import { Box, Button, Modal, Stack, TextField, Typography } from "@mui/material";
+import { collection, getDocs, query, setDoc, getDoc, deleteDoc, doc } from "firebase/firestore";
+import WelcomePage from "./WelcomePage";
+import { doSignOut } from "../auth"
 
 export default function Home() {
-
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'));
@@ -33,7 +35,7 @@ export default function Home() {
     } else {
       await setDoc(docRef, { quantity: 1 });
     }
-    await updateInventory()
+    await updateInventory();
   };
 
   const removeItem = async (item) => {
@@ -52,12 +54,25 @@ export default function Home() {
     await updateInventory();
   };
 
-  useEffect(()=>{
-    updateInventory()
-  }, [])
+  useEffect(() => {
+    updateInventory();
+  }, []);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+
+  const handleContinue = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    await doSignOut();
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <WelcomePage onContinue={handleContinue} />;
+  }
 
   return (
     <Box width="100vw" height="100vh" display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2}>
@@ -74,7 +89,10 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+      <Stack direction={"row"} spacing={10}>
       <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
+      <Button variant="contained" onClick={handleLogout}>Logout</Button>
+      </Stack>
       <Box border="1px solid #333">
         <Box width="700px" height="100px" bgcolor="#FFADAD" display="flex" alignItems="center" justifyContent="center">
           <Typography variant="h2" color="#333">Inventory Management</Typography>
@@ -88,9 +106,9 @@ export default function Home() {
               <Typography variant="h4" color="#333" textAlign="center">
                 {quantity}
               </Typography>
-              <Stack direction={row} spacing={2}>
-              <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
-              <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
+              <Stack direction="row" spacing={2}>
+                <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
+                <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
               </Stack>
             </Box>
           ))}
@@ -99,4 +117,3 @@ export default function Home() {
     </Box>
   );
 };
-

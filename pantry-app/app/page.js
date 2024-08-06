@@ -115,7 +115,7 @@ export default function Home() {
       </Stack>
       <Box border="1px solid #333" mt={2}>
         <Box width="700px" height="100px" bgcolor="#FFADAD" display="flex" alignItems="center" justifyContent="center">
-          <Typography variant="h2" color="#333">Online Pantry</Typography>
+          <Typography variant="h2" color="#333">Online Pantry!</Typography>
         </Box>
         <Stack width="700px" height="300px" spacing={3} sx={{ overflow: 'auto' }}>
           {filteredInventory.map(({ name, quantity }) => (

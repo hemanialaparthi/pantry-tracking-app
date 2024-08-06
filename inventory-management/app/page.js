@@ -12,22 +12,25 @@ export default function Home() {
   const [itemName, setItemName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setIsAuthenticated(true);
-        updateInventory();
+        setUserId(user.uid);
+        updateInventory(user.uid);
       } else {
         setIsAuthenticated(false);
+        setUserId(null);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'inventory'));
+  const updateInventory = async (uid) => {
+    const snapshot = query(collection(firestore, 'inventory', uid, 'items'));
     const docs = await getDocs(snapshot);
     const inventoryList = [];
     docs.forEach((doc) => {
@@ -40,7 +43,7 @@ export default function Home() {
   };
 
   const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item);
+    const docRef = doc(collection(firestore, 'inventory', userId, 'items'), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -49,11 +52,11 @@ export default function Home() {
     } else {
       await setDoc(docRef, { quantity: 1 });
     }
-    await updateInventory();
+    await updateInventory(userId);
   };
 
   const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item);
+    const docRef = doc(collection(firestore, 'inventory', userId, 'items'), item);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -65,7 +68,7 @@ export default function Home() {
       }
     }
 
-    await updateInventory();
+    await updateInventory(userId);
   };
 
   const filteredInventory = inventory

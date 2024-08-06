@@ -6,8 +6,6 @@ import { collection, getDocs, query, setDoc, getDoc, doc, deleteDoc } from "fire
 import WelcomePage from "./welcomePage";
 
 export default function Home() {
-
-  const [showWelcome, setShowWelcome] = useState(true);
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
@@ -57,7 +55,7 @@ export default function Home() {
 
   const filteredInventory = inventory
     .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     updateInventory();
@@ -81,7 +79,7 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
-      <Stack direction={"flex"} justifyContent={"center"} textAlign={"center"} spacing={10}>
+      <Stack direction="row-reverse" justifyContent="center" alignItems="center" width="700px" spacing={2} mt={2}>
       <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
       <Box width="700px" mt={2}>
         <TextField

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from "react";
-import { firestore } from "@/firebase";
+import { auth, firestore } from "@/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { Box, Button, Modal, Stack, TextField, Typography } from "@mui/material";
 import { collection, getDocs, query, setDoc, getDoc, doc, deleteDoc } from "firebase/firestore";
 import WelcomePage from "./welcomePage";
@@ -10,6 +11,20 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        updateInventory();
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'));
@@ -57,15 +72,20 @@ export default function Home() {
     .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  useEffect(() => {
-    updateInventory();
-  }, []);
-
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
+  if (!isAuthenticated) {
+    return <WelcomePage />;
+  }
+
   return (
     <Box width="100vw" height="100vh" display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2}>
+      <Button variant="contained" onClick={handleLogout}>Logout</Button>
       <Modal open={open} onClose={handleClose}>
         <Box position="absolute" top="50%" left="50%" sx={{ transform: 'translate(-50%, -50%)' }} width={400} bgcolor="white" border="2px solid #000" boxShadow={24} p={4} display="flex" flexDirection="column" gap={3}>
           <Typography variant="h6">Add new items!</Typography>
@@ -80,15 +100,15 @@ export default function Home() {
         </Box>
       </Modal>
       <Stack direction="row-reverse" justifyContent="center" alignItems="center" width="700px" spacing={2} mt={2}>
-      <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
-      <Box width="700px" mt={2}>
-        <TextField
-          variant="outlined"
-          placeholder="Search items"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </Box>
+        <Button variant="contained" onClick={handleOpen}>Add new Item!</Button>
+        <Box width="700px" mt={2}>
+          <TextField
+            variant="outlined"
+            placeholder="Search items"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </Box>
       </Stack>
       <Box border="1px solid #333" mt={2}>
         <Box width="700px" height="100px" bgcolor="#FFADAD" display="flex" alignItems="center" justifyContent="center">
@@ -104,8 +124,8 @@ export default function Home() {
                 {quantity}
               </Typography>
               <Stack direction={"row"} spacing={2}>
-              <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
-              <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
+                <Button variant="contained" onClick={() => addItem(name)}>Add Item</Button>
+                <Button variant="contained" onClick={() => removeItem(name)}>Remove Item</Button>
               </Stack>
             </Box>
           ))}

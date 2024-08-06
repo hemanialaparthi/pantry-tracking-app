@@ -1,31 +1,26 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updatePassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { useState } from 'react';
+import { auth } from './firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 
-export const doCreateUserwithEmailandPassword = async (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
-};
+export default function AuthComponent() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
 
-export const doSignInWithEmailAndPassword = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-};
+  const handleAuth = async () => {
+    if (isLogin) {
+      await signInWithEmailAndPassword(auth, email, password);
+    } else {
+      await createUserWithEmailAndPassword(auth, email, password);
+    }
+  };
 
-export const doSignOut = () => {
-    return signOut(auth);
-};
-
-export const doPasswordReset = (email) => {
-    return sendPasswordResetEmail(auth, email);
-};
-
-export const doPasswordChange = (password) => {
-    return updatePassword(auth.currentUser, password);
-};
-
-export const getCurrentUser = () => {
-    return new Promise((resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            unsubscribe();
-            resolve(user);
-        }, reject);
-    });
-};
+  return (
+    <div>
+      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
+      <button onClick={handleAuth}>{isLogin ? 'Login' : 'Sign Up'}</button>
+      <button onClick={() => setIsLogin(!isLogin)}>{isLogin ? 'Switch to Sign Up' : 'Switch to Login'}</button>
+    </div>
+  );
+}
